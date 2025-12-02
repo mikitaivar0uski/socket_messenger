@@ -1,0 +1,59 @@
+### Project Notes ###
+# implement threads
+# create a method check_username instead of big chunk in method create_connections
+
+# push this code to github (include multiple versions like udp, p2p etc.)
+# include WireShark studies
+
+# grow this into a web application with DataBase and Proper Backend
+
+# implement client to client connections -> update cmanager to include current_session, implement universal method for talking in ses_manager
+
+# rename everything in accordance with PEP8
+
+
+-------------------------
+# create several implementations of storage - text files, databases, dicitonaries
+# use os module to retreive current time
+# implement broadcasts
+# groups
+# data bases
+
+
+
+
+
+
+### Do in a Week ### 
+#  
+# identification
+# add this to gitHub after completed
+# list of clients in dictionary like get-lists
+# broadcast messages
+# direct messages
+
+### Further Exploration ###
+# Databases
+# History of chat
+# containers
+# log in services (passwords, encyption)
+
+### Containers Presentation ###
+# include all I already know:
+#       role of native kernel/ vm in containers
+#       Docker Architecture, docker-compose, Images, Dockerfiles, Repos
+#       K8s Clusters, Services, Deployments, Pods, Architecture
+#       Document everything you do, links, screenshots etc
+
+### Additional ###
+# update resume with relevant info about Linux (book) and Containers (running K8s cluster)
+
+
+
+
+
+
+
+
+
+string type hinting with no import?

@@ -12,7 +12,8 @@ class smanager:
                  all_options: dict[str, tuple[Callable, bool]] = {"ls":(client_manager.cmanager.display_all_client_names, False),
                                                                 "disconnect":(client_manager.cmanager.disconnect_client, False),
                                                                 "connect":(ses_manager.create_client_client_connections, True),
-                                                                "username":(client_manager.cmanager.change_username, True)}):
+                                                                "username":(client_manager.cmanager.change_username, True),
+                                                                "menu":(client_manager.cmanager.display_menu, False)}):
         
         self.__listening_address = listening_addr
         self.__listening_port = listening_port
@@ -64,9 +65,8 @@ class smanager:
         
         self.__client_server_connections[username] = (new_cmanager)
 
+        new_cmanager.display_menu(self.__all_options)
         while new_cmanager.getState() != self.__all_states.DISCONNECTED:
-            print("entered")
-            new_cmanager.display_menu(self.__all_options)
             print(f"Waiting for chosen_option from {username}...")
             chosen_option = new_cmanager.receive()
             print(f"Raw chosen option from user {username} is {repr(chosen_option)}, the type is {type(chosen_option)}")
@@ -78,7 +78,7 @@ class smanager:
         print("Waiting for username input from...")
         username = client_socket.recv(512).decode().strip()
         print(f"Username received is {username} with type: {type(username)}")
-        
+
         # drop connection if no username was entered
         if not username:
             client_socket.send("Sorry, you haven't entered a proper username.".encode())
@@ -99,8 +99,6 @@ class smanager:
     def dispatch_chosen_option(self, cmanager: client_manager.cmanager, chosen_option: str):
         chosen_option = chosen_option.strip()
         print(f"chosen option is chosen {chosen_option}")
-        print(f"the type of the state on the client is {type(cmanager.getState())}")
-        print(f"the type of the state in self.__all_states.CHAT: {type(self.__all_states.MENU)}")
         if cmanager.getState() == self.__all_states.CHAT: # define missing methods and properties\
             print("enetred chat")
             self.__all_sessions[cmanager.getName()].initialize_communication() # refer to already created session by another user
@@ -148,6 +146,8 @@ class smanager:
         self.__client_server_connections[new_username] = self.__client_server_connections[old_username]
         del self.__client_server_connections[old_username]
 
+        requester.send(f"Your username has been updated, your new username is {new_username}\n")
+
         return
 
 
@@ -158,6 +158,9 @@ class smanager:
         
         del self.__client_server_connections[username]
         return
+    
+    def getOptions(self):
+        return self.__all_options
     
 
 ###### HELPER METHODS FOR SESSION MANAGER ######

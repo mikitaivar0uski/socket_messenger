@@ -23,16 +23,21 @@ class Client:
     def talk_to_server(self):
         while True:
             message = input()
+            if not message:
+                continue
             self.__send(message)
             
             try:
                 response = self.__receive()
+                if not response:
+                    print("Server disconnected.")
+                    break
+                print(response)
             except ConnectionAbortedError:
                 print("Server disconnected.")
                 break
             
-            print(response)
-    
+        
 
     def __receive(self):
         response = self.socket.recv(1024).decode()

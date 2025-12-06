@@ -29,7 +29,9 @@ class cmanager:
         return message
 
 
-    def display_menu(self, options: dict):
+    def display_menu(self, options: dict = None):
+        if options is None:
+            options = self.__smanager.getOptions()
         # create a menu
         message = "\nHere are all available commmands: \n"
         for key in options.keys():

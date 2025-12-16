@@ -57,19 +57,17 @@ class ses_manager():
             message = self.cmanagerSrc.receive()
           
           
-    def __handle_exit_message(self, message):
-        pass
-        # - call a method that deletes all instances of sess_manager (from server_manager dictionary and from each cmanager attributes)
-        # - print to both users that chat has ended
+    def __handle_exit_message(self):
+        # change each client's session to None
+        self.__set_sessions_in_cmanagers_to_None()
 
+        # change each client's state back to MENU
+        self.__change_states_to_menu()
+
+        # send (chat ended)
         self.cmanagerSrc.send(f"You exited the chat with {self.cmanagerTarget.getName()}.")
-        self.cmanagerSrc.disconnect_client()
 
         self.cmanagerTarget.send(f"{self.cmanagerSrc.getName()} decided to exit the chat.")
-        self.cmanagerTarget.disconnect_client()
-
-        # self.smanager.remove_session()
-
         return
     
     def __announce_established_connection_to_both_clients(self):
@@ -85,6 +83,9 @@ class ses_manager():
         self.cmanagerTarget.change_session(target_session)
         return 
     
+    def __set_sessions_in_cmanagers_to_None(self):
+        self.cmanagerSrc.change_session_to_None()
+        self.cmanagerTarget.change_session_to_None()
     #def __set_sessions_in_global_dictionary(self):
     #    target_session = ses_manager(self.cmanagerTarget, self.cmanagerSrc, self.smanager)
     #

@@ -1,6 +1,7 @@
 from enum import Enum
 
-class ClientState(Enum):
-    MENU: str = "menu"
-    CHAT: str = "chat"
-    DISCONNECTED: str = "disconnected"
+
+class ClientStates(Enum):
+    MENU = "menu"
+    CHAT = "chat"
+    DISCONNECTED = "disconnected"

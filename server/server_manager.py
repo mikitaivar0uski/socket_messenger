@@ -3,45 +3,48 @@ import threading
 from typing import Callable
 
 import client_manager
-from session_manager import ses_manager
-from client_states import ClientState
+from session_manager import SessionManager
+from client_states import ClientStates
 
 
-class smanager:
+class ServerManager:
     def __init__(
         self,
         listening_addr="localhost",
         listening_port=5678,
         all_options: dict[str, tuple[Callable, bool]] = {
-            "ls": (client_manager.cmanager.display_all_client_names, False),
-            "disconnect": (client_manager.cmanager.disconnect_client, False),
-            "connect": (ses_manager.create_client_client_connections, True),
-            "username": (client_manager.cmanager.change_username, True),
-            "menu": (client_manager.cmanager.display_menu, False),
+            "ls": (client_manager.ClientManager.show_available_clients, False),
+            "disconnect": (client_manager.ClientManager.disconnect_client, False),
+            "connect": (
+                SessionManager.create_and_handle_client_to_client_communication,
+                True,
+            ),
+            "username": (client_manager.ClientManager.set_username, True),
+            "menu": (client_manager.ClientManager.show_menu, False),
         },
     ):
 
         self.__listening_address = listening_addr
         self.__listening_port = listening_port
         self.__listening_socket: socket.socket = None
-        self.__client_server_connections: dict[str, client_manager.cmanager] = {}
+        self.__client_server_connections: dict[str, client_manager.ClientManager] = {}
 
         self.__all_options = all_options
-        self.__all_states: ClientState = ClientState
+        self.__all_states: ClientStates = ClientStates
 
-        self.__all_sessions: dict[str, tuple[ses_manager, ses_manager]] = {}
+        self.__all_sessions: dict[str, tuple[SessionManager, SessionManager]] = {}
 
-    def create_listening_socket(self):
+    def listen_for_new_connections(self):
         self.__listening_socket = socket.socket(
             socket.AF_INET, socket.SOCK_STREAM
         )  # ipv4 + tcp
         server_address = (self.__listening_address, self.__listening_port)
         self.__listening_socket.bind(server_address)
-        self.__listening_socket.listen(2)
+        self.__listening_socket.listen(20)
 
         return
 
-    def create_client_server_connections(self):
+    def accept_and_handle_incoming_connections(self):
         # accept client_server_connections
         while True:
             print("Waiting for new connections...")
@@ -49,23 +52,21 @@ class smanager:
             print(f"Incoming connection from {client_addr}")
 
             client_thread = threading.Thread(
-                target=self.__handle_client_server_connection,
+                target=self.__handle_connection,
                 args=(client_socket, client_addr),
             )
             client_thread.daemon = True
             client_thread.start()
 
-    def __handle_client_server_connection(
-        self, client_socket: socket.socket, client_addr: str
-    ):
+    def __handle_connection(self, client_socket: socket.socket, client_addr: str):
         print(f"The type of all_states is {type(self.__all_states)}")
         print(f"THREAD started for {client_addr}")
-        username = self.__receive_and_check_username(client_socket)
+        username = self.__ask_for_and_verify_username(client_socket)
 
         if not username:
             return
 
-        new_cmanager = client_manager.cmanager(
+        new_cmanager = client_manager.ClientManager(
             smanager=self,
             client_socket=client_socket,
             addr=client_addr,
@@ -75,16 +76,16 @@ class smanager:
 
         self.__client_server_connections[username] = new_cmanager
 
-        new_cmanager.display_menu(self.__all_options)
-        while new_cmanager.getState() != self.__all_states.DISCONNECTED:
+        new_cmanager.show_menu(self.__all_options)
+        while new_cmanager.get_state() != self.__all_states.DISCONNECTED:
             print(f"Waiting for chosen_option from {username}...")
-            chosen_option = new_cmanager.receive()
+            chosen_option = new_cmanager.receive_message()
             print(
                 f"Raw chosen option from user {username} is {repr(chosen_option)}, the type is {type(chosen_option)}"
             )
-            self.dispatch_chosen_option(new_cmanager, chosen_option)
+            self.__dispatch_chosen_option(new_cmanager, chosen_option)
 
-    def __receive_and_check_username(self, client_socket: socket.socket) -> str:
+    def __ask_for_and_verify_username(self, client_socket: socket.socket) -> str:
         client_socket.send(
             "Please, enter you username otherwise you can't access this server".encode()
         )
@@ -108,22 +109,22 @@ class smanager:
         print(f"Username {username} is accepted")
         return username
 
-    def dispatch_chosen_option(
-        self, cmanager: client_manager.cmanager, chosen_option: str
+    def __dispatch_chosen_option(
+        self, cmanager: client_manager.ClientManager, chosen_option: str
     ):
         chosen_option = chosen_option.strip()
         print(f"chosen option is chosen {chosen_option}")
         if (
-            cmanager.getState() == self.__all_states.CHAT
+            cmanager.get_state() == self.__all_states.CHAT
         ):  # define missing methods and properties\
             print("entered chat")
             self.__client_server_connections[
-                cmanager.getName()
-            ].getSession().initialize_communication(
+                cmanager.get_username()
+            ].get_session().initialize_communication(
                 self, chosen_option
             )  # refer to already created session by another user
 
-        elif cmanager.getState() == self.__all_states.MENU:
+        elif cmanager.get_state() == self.__all_states.MENU:
             print("entered menu")
             # check if chosen_option is available
             for option, (handler, is_special) in self.__all_options.items():
@@ -131,15 +132,15 @@ class smanager:
                     # check if only one arg was provided
                     parts = chosen_option.split()
                     if len(parts) != 2:
-                        cmanager.send(
+                        cmanager.send_message(
                             "Correct usage: <command> <argument>. Please try again, choose one of the following: "
                         )
-                        cmanager.display_menu(self.__all_options)
-                        return self.dispatch_chosen_option()
+                        cmanager.show_menu(self.__all_options)
+                        return self.__dispatch_chosen_option()
 
                     # handler for connect
                     if chosen_option.startswith("connect "):
-                        new_ses_manager = ses_manager(
+                        new_ses_manager = SessionManager(
                             cmanagerSrc=cmanager,
                             cmanagerTarget=self.__client_server_connections[parts[1]],
                             smanager=self,
@@ -157,21 +158,24 @@ class smanager:
                     return
 
             print("skipped the loop")
-            cmanager.send("Not a valid option, please try again: \n")
+            cmanager.send_message("Not a valid option, please try again: \n")
             return
 
     ###### HELPER METHODS ######
 
-    def getConnections(self):
+    def get_connections(self):
         return self.__client_server_connections
 
     ###### HELPER METHODS FOR CLIENT MANAGER ######
 
-    def change_username(
-        self, requester: client_manager.cmanager, old_username: str, new_username: str
+    def set_username(
+        self,
+        requester: client_manager.ClientManager,
+        old_username: str,
+        new_username: str,
     ):
         # only allow client_manager to access this method
-        if not isinstance(requester, client_manager.cmanager):
+        if not isinstance(requester, client_manager.ClientManager):
             print("You are not a client manager, nothing is changed.")
             return
 
@@ -180,21 +184,21 @@ class smanager:
         )
         del self.__client_server_connections[old_username]
 
-        requester.send(
+        requester.send_message(
             f"Your username has been updated, your new username is {new_username}\n"
         )
 
         return
 
-    def disconnect_client(self, requester: client_manager.cmanager, username: str):
-        if not isinstance(requester, client_manager.cmanager):
+    def disconnect_client(self, requester: client_manager.ClientManager, username: str):
+        if not isinstance(requester, client_manager.ClientManager):
             print("You are not a client manager, nothing is changed.")
             return
 
         del self.__client_server_connections[username]
         return
 
-    def getOptions(self):
+    def get_options_from_menu(self):
         return self.__all_options
 
 

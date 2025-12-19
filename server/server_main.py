@@ -6,12 +6,12 @@ import client_manager, server_manager
 
 
 def main():
-    smanager = server_manager.smanager()
+    serv_manager = server_manager.ServerManager()
     # create a listening_socket and listen for new connections
-    smanager.create_listening_socket()
+    serv_manager.listen_for_new_connections()
     # accept new connections for clients who entered username, constantly updates 'connections', state = "menu"
     # performs: while True: accept | create connection | display menu
-    smanager.create_client_server_connections()
+    serv_manager.accept_and_handle_incoming_connections()
 
     # smanager.dispatch_chosen_option()
 

@@ -136,7 +136,13 @@ class ServerManager:
                             "Correct usage: <command> <argument>. Please try again, choose one of the following: "
                         )
                         cmanager.show_menu(self.__all_options)
-                        return self.__dispatch_chosen_option()
+                        return
+                    
+                    # check if user exists
+                    if not self.__client_server_connections[parts[1]]:
+                        cmanager.send_message(f"User {parts[1]} doesn't exist")
+                        cmanager.show_menu()
+                        return
 
                     # handler for connect
                     if chosen_option.startswith("connect "):

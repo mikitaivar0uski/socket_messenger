@@ -34,11 +34,11 @@ class ClientManager:
 
     def show_menu(self, options: dict = None):
         if options is None:
-            options = self.__smanager.get_options_from_menu()
+            options = self.__smanager.get_all_options()
         # create a menu
         message = "\nHere are all available commmands: \n"
-        for key in options.keys():
-            message += f"\t-{key}\n"
+        for option, (*_, option_description) in options.items():
+            message += f"\t- {option + option_description}\n"
 
         # send the menu
         self.send_message(message)
@@ -47,10 +47,11 @@ class ClientManager:
     def show_available_clients(self):
         connections = self.__smanager.get_connections().keys()
         print(f"Connections are {connections}")
-        client_names = ""
-        for name in connections:
-            client_names += name + "\n"
-        self.send_message(client_names)
+        client_names = list(connections)
+        client_names.remove(self.get_username())
+        client_names_to_send = '\n\t-'.join(client_names) + '\n'
+        
+        self.send_message(client_names_to_send)
         return
 
     def disconnect_client(self):

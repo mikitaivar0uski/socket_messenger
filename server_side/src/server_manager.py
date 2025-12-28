@@ -21,15 +21,16 @@ class ServerManager:
         self,
         listening_addr: str = os.getenv("LISTENING_ADDRESS"),
         listening_port: int = int(os.getenv("LISTENING_PORT")),
-        all_options: dict[str, tuple[Callable, bool]] = {
-            "ls": (client_manager.ClientManager.show_available_clients, False),
-            "disconnect": (client_manager.ClientManager.disconnect_client, False),
+        all_options: dict[str, tuple[Callable, bool, str]] = {
+            "ls": (client_manager.ClientManager.show_available_clients, False, " - list all users except you"),
+            "disconnect": (client_manager.ClientManager.disconnect_client, False, " - disconnect from server"),
             "connect": (
                 SessionManager.create_and_handle_client_to_client_communication,
                 True,
+                " <target_username> - enter chat with another user if available"
             ),
-            "username": (client_manager.ClientManager.set_username, True),
-            "menu": (client_manager.ClientManager.show_menu, False),
+            "username": (client_manager.ClientManager.set_username, True, " <new_username> - change your username"),
+            "menu": (client_manager.ClientManager.show_menu, False, " - display all options again"),
         },
     ):
 
@@ -138,10 +139,11 @@ class ServerManager:
         elif cmanager.get_state() == self.__all_states.MENU:
             print("entered menu")
             # check if chosen_option is available
-            for option, (handler, is_special) in self.__all_options.items():
+            for option, (handler, is_special, *_) in self.__all_options.items():
                 if is_special and chosen_option.startswith(f"{option} "):
                     # check if only one arg was provided
                     parts = chosen_option.split()
+                    option_argument = parts[1]
                     if len(parts) != 2:
                         cmanager.send_message(
                             "Correct usage: <command> <argument>. Please try again, choose one of the following: "
@@ -152,21 +154,21 @@ class ServerManager:
                     # handler for connect
                     if chosen_option.startswith("connect "):
                         # check if user exists
-                        if parts[1] not in self.__client_server_connections.keys():
-                            cmanager.send_message(f"User '{parts[1]}' doesn't exist")
+                        if option_argument not in self.__client_server_connections.keys():
+                            cmanager.send_message(f"User '{option_argument}' doesn't exist")
                             cmanager.show_menu()
                             return
 
                         new_ses_manager = SessionManager(
                             cmanagerSrc=cmanager,
-                            cmanagerTarget=self.__client_server_connections[parts[1]],
+                            cmanagerTarget=self.__client_server_connections[option_argument],
                             smanager=self,
                         )
                         handler(new_ses_manager)
                         return
 
                     print(f"BUG - parts: {parts}")
-                    handler(cmanager, parts[1])
+                    handler(cmanager, option_argument)
                     return
 
                 elif not is_special and chosen_option == option:
@@ -215,7 +217,7 @@ class ServerManager:
         del self.__client_server_connections[username]
         return
 
-    def get_options_from_menu(self):
+    def get_all_options(self):
         return self.__all_options
 
 

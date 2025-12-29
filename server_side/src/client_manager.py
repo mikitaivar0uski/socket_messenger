@@ -33,7 +33,7 @@ class ClientManager:
         return message
 
     def show_menu(self, options: dict = None):
-        if options is None:
+        if not options:
             options = self.__smanager.get_all_options()
         # create a menu
         message = "\nHere are all available commmands: \n"
@@ -49,8 +49,8 @@ class ClientManager:
         print(f"Connections are {connections}")
         client_names = list(connections)
         client_names.remove(self.get_username())
-        client_names_to_send = '\n\t-'.join(client_names) + '\n'
-        
+        client_names_to_send = "\n\t-".join(client_names) + "\n"
+
         self.send_message(client_names_to_send)
         return
 
@@ -77,7 +77,7 @@ class ClientManager:
         self.__state = new_state
         return
 
-    def change_session(self, session: "ses_manager"):
+    def set_session(self, session: "ses_manager"):
         self.__ses_manager = session
         return
 

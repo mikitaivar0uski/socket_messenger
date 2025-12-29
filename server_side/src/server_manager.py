@@ -44,6 +44,8 @@ class ServerManager:
 
         self.__all_sessions: dict[str, tuple[SessionManager, SessionManager]] = {}
 
+### INITIATE CONNECTION WITH THE SERVER ###
+
     def listen_for_new_connections(self):
         self.__listening_socket = socket.socket(
             socket.AF_INET, socket.SOCK_STREAM
@@ -70,45 +72,24 @@ class ServerManager:
             client_thread.daemon = True
             client_thread.start()
 
+### HANDLE CONNECTION ###
+
     def __handle_connection(self, client_socket: socket.socket, client_addr: str):
         print(f"The type of all_states is {type(self.__all_states)}")
         print(f"THREAD started for {client_addr}")
-        username = self.__ask_for_and_verify_username(client_socket)
 
-        if not username:
+        username = self.__get_verified_username(client_socket)
+        if username is None:
             return
+        
+        self.__register_client(client_socket, client_addr, username)
 
-        new_cmanager = client_manager.ClientManager(
-            smanager=self,
-            client_socket=client_socket,
-            addr=client_addr,
-            username=username,
-            state=self.__all_states.MENU,
-        )
+        self.__client_server_connections[username].show_menu(self.__all_options)
 
-        self.__client_server_connections[username] = new_cmanager
-
-        new_cmanager.show_menu(self.__all_options)
-        try:
-            while new_cmanager.get_state() != self.__all_states.DISCONNECTED:
-                print(f"Waiting for chosen_option from {username}...")
-                chosen_option = new_cmanager.receive_message()
-                print(
-                    f"Raw chosen option from user {username} is {repr(chosen_option)}, the type is {type(chosen_option)}"
-                )
-                self.__dispatch_chosen_option(new_cmanager, chosen_option)
-        except ConnectionResetError as cre:
-            print(f"USER {username} forcibly closed connection. {repr(cre)}")
-            self.__client_server_connections[username].disconnect_client()
-            return
-        except Exception as e:
-            print(f"EXCEPTION is reached in handler {repr(e)}")
-            self.__client_server_connections[username].disconnect_client()
-            return
+        self.__serve(cmanager=self.__client_server_connections[username])
 
 
-
-    def __ask_for_and_verify_username(self, client_socket: socket.socket) -> str:
+    def __get_verified_username(self, client_socket: socket.socket) -> str:
         client_socket.send(
             "Please, enter you username otherwise you can't access this server".encode()
         )
@@ -120,17 +101,48 @@ class ServerManager:
         if not username:
             client_socket.send("Sorry, you haven't entered a proper username.".encode())
             client_socket.close()
-            return
+            return None
 
         elif username in self.__client_server_connections:
             client_socket.send(
-                "Sorry, this username is not available, please enter another one.".encode()
+                "Sorry, this username is not available".encode()
             )
             client_socket.close()
-            return
+            return None
 
         print(f"Username {username} is accepted")
         return username
+    
+    def __register_client(self, c_socket: socket.socket, c_addr: str, c_username: str):
+        new_cmanager = client_manager.ClientManager(
+            smanager=self,
+            client_socket=c_socket,
+            addr=c_addr,
+            username=c_username,
+            state=self.__all_states.MENU,
+        )
+        self.__client_server_connections[c_username] = new_cmanager
+        return
+    
+    def __serve(self, cmanager: client_manager.ClientManager):
+        try:
+            while cmanager.get_state() != self.__all_states.DISCONNECTED:
+                print(f"Waiting for chosen_option from {cmanager.get_username()}...")
+                chosen_option = cmanager.receive_message()
+                print(
+                    f"Raw chosen option from user {cmanager.get_username()} is {repr(chosen_option)}, the type is {type(chosen_option)}"
+                )
+                self.__dispatch_chosen_option(cmanager, chosen_option)
+        except ConnectionResetError as cre:
+            print(f"USER {cmanager.get_username()} forcibly closed connection. {repr(cre)}")
+            cmanager.disconnect_client()
+            return
+        except Exception as e:
+            print(f"EXCEPTION is reached in handler {repr(e)}")
+            cmanager.disconnect_client()
+            return
+
+### DISPATCH CLIENT'S INPUT ###
 
     def __dispatch_chosen_option(
         self, cmanager: client_manager.ClientManager, chosen_option: str

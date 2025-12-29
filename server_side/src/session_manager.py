@@ -106,17 +106,17 @@ class SessionManager:
         return
 
     def __set_session_managers_for_both_clients(self):
-        self.cmanagerSrc.change_session(self)
+        self.cmanagerSrc.set_session(self)
 
         target_session = SessionManager(
             self.cmanagerTarget, self.cmanagerSrc, self.smanager
         )
-        self.cmanagerTarget.change_session(target_session)
+        self.cmanagerTarget.set_session(target_session)
         return
 
     def __set_session_managers_for_both_clients_to_none(self):
-        self.cmanagerSrc.change_session(None)
-        self.cmanagerTarget.change_session(None)
+        self.cmanagerSrc.set_session(None)
+        self.cmanagerTarget.set_session(None)
         return
 
     def __check_if_target_exists(self):

@@ -29,16 +29,26 @@ class Client:
         t2 = threading.Thread(target=self.__listen_to_server_and_display)
         t1.start()
         t2.start()
-        t2.join()
+        try:
+            t1.join()
+            t2.join()
+        except KeyboardInterrupt as ki:
+            print(f"EXCEPTION {repr(ki)}")
+            self.socket.close()
 
     def __listen_for_input_and_send(self):
         while True:
-            message = input()
-            if not message:
-                continue
             try:
+                message = input()
+                if not message:
+                    continue
                 self.__send(message)
-            except:
+            except (EOFError, KeyboardInterrupt):
+                self.socket.close()
+                break
+            except Exception as e:
+                self.socket.close()
+                print("EXCEPTION raised: " + repr(e))
                 break
 
     def __listen_to_server_and_display(self):
@@ -52,7 +62,9 @@ class Client:
             except ConnectionAbortedError:
                 print("Server disconnected.")
                 break
-        return
+            except Exception as e:
+                print("EXCEPTION from server: " + e)
+                break
 
     def __receive(self):
         response = self.socket.recv(1024).decode()

@@ -89,13 +89,24 @@ class ServerManager:
         self.__client_server_connections[username] = new_cmanager
 
         new_cmanager.show_menu(self.__all_options)
-        while new_cmanager.get_state() != self.__all_states.DISCONNECTED:
-            print(f"Waiting for chosen_option from {username}...")
-            chosen_option = new_cmanager.receive_message()
-            print(
-                f"Raw chosen option from user {username} is {repr(chosen_option)}, the type is {type(chosen_option)}"
-            )
-            self.__dispatch_chosen_option(new_cmanager, chosen_option)
+        try:
+            while new_cmanager.get_state() != self.__all_states.DISCONNECTED:
+                print(f"Waiting for chosen_option from {username}...")
+                chosen_option = new_cmanager.receive_message()
+                print(
+                    f"Raw chosen option from user {username} is {repr(chosen_option)}, the type is {type(chosen_option)}"
+                )
+                self.__dispatch_chosen_option(new_cmanager, chosen_option)
+        except ConnectionResetError as cre:
+            print(f"USER {username} forcibly closed connection. {repr(cre)}")
+            self.__client_server_connections[username].disconnect_client()
+            return
+        except Exception as e:
+            print(f"EXCEPTION is reached in handler {repr(e)}")
+            self.__client_server_connections[username].disconnect_client()
+            return
+
+
 
     def __ask_for_and_verify_username(self, client_socket: socket.socket) -> str:
         client_socket.send(

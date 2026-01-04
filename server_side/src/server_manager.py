@@ -179,9 +179,13 @@ class ServerManager:
                         # check if user exists
                         if option_argument not in self.__client_server_connections.keys():
                             cmanager.send_message(f"User '{option_argument}' doesn't exist")
-                            cmanager.show_menu()
                             return
 
+                        # disallow self connect
+                        if option_argument == cmanager.get_username():
+                            cmanager.send_message("You cannot connect with yourself...")
+                            return
+                        
                         new_ses_manager = SessionManager(
                             cmanagerSrc=cmanager,
                             cmanagerTarget=self.__client_server_connections[option_argument],

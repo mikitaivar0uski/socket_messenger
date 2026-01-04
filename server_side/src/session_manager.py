@@ -14,7 +14,7 @@ class SessionManager:
         self.smanager = smanager
 
     def create_and_handle_client_to_client_communication(self):
-        # check if target exist
+        # check if target exists
         if not self._check_if_target_exists():
             self.cmanagerSrc.send_message(
                 "Target doesn't exist in our data base, please try again later"
@@ -33,17 +33,13 @@ class SessionManager:
         # change states for both to chat
         self._set_states_for_both_clients(ClientStates.CHAT)
 
-        # self.__set_sessions_in_global_dictionary()
-
-        # notify target that it is chatting with source (probably not needed)
-        # self.cmanagerTarget.send(f"You are now in chat with {self.cmanagerSrc.getName()}")
-
-        # relay messages from source to target
+        # initiate actual chat
         self._notify_both_clients_about_established_connection()
         self.start_talking(requester=self)
 
         return
 
+    
     # ---Direct communication between Clients (message relay)--- #
 
     def start_talking(self, requester, message: str = None):
@@ -78,10 +74,8 @@ class SessionManager:
         return message
 
     def _set_exit_condition(self):
-        # change each client's session to None
         self._set_session_managers_for_both_clients_to_none()
 
-        # change each client's state back to MENU
         self._set_states_for_both_clients(ClientStates.MENU)
 
         self.cmanagerSrc.send_message(

@@ -44,7 +44,7 @@ class ServerManager:
 
         self._all_sessions: dict[str, tuple[SessionManager, SessionManager]] = {}
 
-### INITIATE CONNECTION WITH THE SERVER ###
+#### INITIATE CONNECTION WITH THE SERVER ####
 
     def listen_for_new_connections(self):
         self._listening_socket = socket.socket(
@@ -59,7 +59,6 @@ class ServerManager:
         return
 
     def accept_and_handle_incoming_connections(self):
-        # accept client_server_connections
         while True:
             print("Waiting for new connections...")
             client_socket, client_addr = self._listening_socket.accept()
@@ -72,7 +71,7 @@ class ServerManager:
             client_thread.daemon = True
             client_thread.start()
 
-### HANDLE CONNECTION ###
+#### HANDLE A CONNECTION ####
 
     def _handle_connection(self, client_socket: socket.socket, client_addr: str):
         print(f"The type of all_states is {type(self._all_states)}")
@@ -97,7 +96,7 @@ class ServerManager:
         username = client_socket.recv(512).decode().strip()
         print(f"Username received is {username} with type: {type(username)}")
 
-        # drop connection if no username was entered
+        # drop connection if no/ empty username was sent
         if not username:
             client_socket.send("Sorry, you haven't entered a proper username.".encode())
             client_socket.close()
@@ -142,7 +141,7 @@ class ServerManager:
             cmanager.disconnect_client()
             return
 
-### DISPATCH CLIENT'S INPUT ###
+#### DISPATCH CLIENT'S INPUT ####
 
     def _dispatch_chosen_option(
         self, cmanager: client_manager.ClientManager, chosen_option: str
@@ -151,19 +150,20 @@ class ServerManager:
         print(f"chosen option is chosen {chosen_option}")
         if (
             cmanager.get_state() == self._all_states.CHAT
-        ):  # define missing methods and properties\
+        ):
             print("entered chat")
             self._client_server_connections[
                 cmanager.get_username()
             ].get_session().start_talking(
                 self, chosen_option
-            )  # refer to already created session by another user
+            )  # refer to already created session by another user who initiated the chat
 
         elif cmanager.get_state() == self._all_states.MENU:
             print("entered menu")
-            # check if chosen_option is available
+
             for option, (handler, is_special, *_) in self._all_options.items():
                 if is_special and chosen_option.startswith(f"{option} "):
+
                     # check if only one arg was provided
                     parts = chosen_option.split()
                     option_argument = parts[1]
@@ -174,7 +174,7 @@ class ServerManager:
                         cmanager.show_menu(self._all_options)
                         return
 
-                    # handler for connect
+                    # handle 'connect' option
                     if chosen_option.startswith("connect "):
                         # check if user exists
                         if option_argument not in self._client_server_connections.keys():
@@ -207,12 +207,10 @@ class ServerManager:
             cmanager.send_message("Not a valid option, please try again: \n")
             return
 
-    ###### HELPER METHODS ######
+###### HELPER METHODS ######
 
     def get_connections(self):
         return self._client_server_connections
-
-    ###### HELPER METHODS FOR CLIENT MANAGER ######
 
     def set_username(
         self,
@@ -250,10 +248,3 @@ class ServerManager:
 
     def get_all_options(self):
         return self._all_options
-
-
-###### HELPER METHODS FOR SESSION MANAGER ######
-
-# def update_sessions(self, src_name: str, src_ses_manager: ses_manager, tgt_ses_manager: ses_manager):
-#    self.__all_sessions[src_name]=(src_ses_manager, tgt_ses_manager)
-#    return

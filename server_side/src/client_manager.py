@@ -35,12 +35,12 @@ class ClientManager:
     def show_menu(self, options: dict = None):
         if not options:
             options = self._smanager.get_all_options()
+
         # create a menu
         message = "\nHere are all available commmands: \n"
         for option, (*_, option_description) in options.items():
             message += f"\t- {option + option_description}\n"
 
-        # send the menu
         self.send_message(message)
         return
 
@@ -65,12 +65,13 @@ class ClientManager:
             return
         
         old_username = self._username
+
         # update name server wide
         if not self._smanager.set_username(
             self, old_username=old_username, new_username=new_username
         ):
             return
-        # update name in instance of this class
+        
         self._username = new_username
         return
 

@@ -225,6 +225,10 @@ class ServerManager:
             print("You are not a client manager, nothing is changed.")
             return
 
+        if new_username in self.__client_server_connections:
+            requester.send_message("You cannot choose a name of an existing user, please try another one")
+            return
+
         self.__client_server_connections[new_username] = (
             self.__client_server_connections[old_username]
         )

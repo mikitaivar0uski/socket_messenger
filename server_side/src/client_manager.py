@@ -60,13 +60,14 @@ class ClientManager:
         return self.__smanager.disconnect_client(self, self.__username)
 
     def set_username(self, new_username: str):
+        self.__smanager.set_username(
+            self, old_username=old_username, new_username=new_username
+        )
         # update name in instance of this class
         old_username = self.__username
         self.__username = new_username
         # update name server wide
-        return self.__smanager.set_username(
-            self, old_username=old_username, new_username=new_username
-        )
+        return
 
     def set_state(self, new_state: ClientStates):
         if not isinstance(new_state, ClientStates):

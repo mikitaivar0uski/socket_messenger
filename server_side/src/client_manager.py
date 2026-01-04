@@ -60,6 +60,10 @@ class ClientManager:
         return self.__smanager.disconnect_client(self, self.__username)
 
     def set_username(self, new_username: str):
+        if new_username == self.get_username():
+            self.send_message("What's the point of changing your username if it's the same as before?..")
+            return
+
         self.__smanager.set_username(
             self, old_username=old_username, new_username=new_username
         )

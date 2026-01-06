@@ -54,30 +54,22 @@ class SessionManager:
         while not self._exit_condition_met():
             if message == "/exit":
                 self._set_exit_condition()
-                self._exit_condition_handler()
-                return
+                self._exit_condition_handler(message)
+                break
 
             self.cmanagerTarget.send_message_include_sender(
                 message, self.cmanagerSrc.get_username()
             )  # might be redundant
             message = self.cmanagerSrc.receive_message()
-
-        self._exit_condition_handler(message)
+            
         return
 
     def _exit_condition_met(self):
-        if not self.cmanagerSrc.get_session():
+        if not self.cmanagerSrc.get_session() and self.cmanagerSrc.get_state() == ClientStates.MENU:
             return True
         return False
 
     def _exit_condition_handler(self, message: str = None):
-        return message
-
-    def _set_exit_condition(self):
-        self._set_session_managers_for_both_clients_to_none()
-
-        self._set_states_for_both_clients(ClientStates.MENU)
-
         self.cmanagerSrc.send_message(
             f"The chat with {self.cmanagerTarget.get_username()} is over\n"
         )
@@ -86,6 +78,12 @@ class SessionManager:
             f"The chat with {self.cmanagerSrc.get_username()} is over\n"
         )
         self.cmanagerTarget.show_menu()
+        return message
+
+    def _set_exit_condition(self):
+        self._set_session_managers_for_both_clients_to_none()
+
+        self._set_states_for_both_clients(ClientStates.MENU)
         return
 
     # ---The end of direct communication--- #

@@ -45,13 +45,33 @@ class ClientManager:
         return
 
     def show_available_clients(self):
-        connections = self._smanager.get_connections().keys()
-        print(f"Connections are {connections}")
-        client_names = list(connections)
-        client_names.remove(self.get_username())
-        client_names_to_send = "\n\t-".join(client_names) + "\n"
+        connections = self._smanager.get_connections()
 
-        self.send_message(client_names_to_send)
+        lines = []
+
+        for username, cmanager in connections.items():
+            if username == self.get_username():
+                continue
+            
+            match cmanager.get_state():
+                case ClientStates.CHAT:
+                    status =  " (unavailable)"
+                case  ClientStates.MENU:
+                    status = ""
+                case ClientStates.DISCONNECTED:
+                    status = " (disconnected)"
+                case _:
+                    status = " (unknown status, please contact support)"
+
+            lines.append(f"- {username}{status}")
+
+        if not lines:
+            self.send_message("No other users connected...")
+            return
+        
+        message = "\n".join(lines)
+
+        self.send_message(message)
         return
 
     def disconnect_client(self):

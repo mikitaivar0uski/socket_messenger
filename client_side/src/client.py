@@ -19,11 +19,6 @@ class Client:
         self.socket.connect((self.server_address, self.server_port))
         return
 
-    def receive_the_menu(self):
-        menu = self.__receive()
-        print(menu)
-        return
-
     def talk_to_server(self):
         t1 = threading.Thread(target=self.__listen_for_input_and_send)
         t2 = threading.Thread(target=self.__listen_to_server_and_display)

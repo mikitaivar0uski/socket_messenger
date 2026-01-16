@@ -121,7 +121,7 @@ class SessionManager:
             return True
         elif self.cmanagerTarget.get_state() == ClientStates.CHAT:
             return False
-        self.cmanagerSrc("Unknown error occured, please wait until we resolve it")
+        self.cmanagerSrc.send_message("Unknown error occured, please wait until we resolve it")
         print("New ClientState.STATE isn't handled")
         return
 

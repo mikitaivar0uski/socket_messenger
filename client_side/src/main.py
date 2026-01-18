@@ -1,4 +1,4 @@
-from client import Client
+from client_side.src.core.client import Client
 
 client = Client()
 

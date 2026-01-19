@@ -1,5 +1,8 @@
 # Database Design
 
+## Notes
+- only a certain number of messages (per client) / logs can be stored
+
 ---
 
 ## Entities

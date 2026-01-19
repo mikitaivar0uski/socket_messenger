@@ -5,6 +5,9 @@ class Core():
         self.running = True
 
     def on_user_input(self, message: str):
+        if not self.running:
+            return
+        
         if message:
             self.network.send_to_server(message)
 

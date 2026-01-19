@@ -12,6 +12,8 @@ def user_input_loop(core):
     while core.running:
         try:
             message = core.ui.read()
+            if not core.running:
+                break
             core.on_user_input(message)
         except (EOFError, KeyboardInterrupt):
             core.stop()

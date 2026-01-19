@@ -1,0 +1,20 @@
+class Core():
+    def __init__(self, network, ui):
+        self.network = network
+        self.ui = ui
+        self.running = True
+
+    def on_user_input(self, message: str):
+        if message:
+            self.network.send_to_server(message)
+
+    def on_server_message(self, message: str):
+        if not message:
+            self.ui.display("Server disconnected.")
+            self.stop()
+        else:
+            self.ui.display(message)
+
+    def stop(self):
+        self.running = False
+        self.network.close_server_connection()

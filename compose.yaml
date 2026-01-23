@@ -3,19 +3,13 @@ services:
     build: ./client_side
     env_file:
       - ./client_side/.env
-    stdin_open: true 
-    tty: true
 
   client2:
     build: ./client_side
     env_file:
       - ./client_side/.env
-    stdin_open: true 
-    tty: true
   
   server:
     build: ./server_side
     env_file:
       - ./server_side/.env
-    stdin_open: true 
-    tty: true

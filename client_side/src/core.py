@@ -19,5 +19,8 @@ class Core():
             self.ui.display(message)
 
     def stop(self):
+        if self.running == False:
+            return
+        
         self.running = False
         self.network.close_server_connection()

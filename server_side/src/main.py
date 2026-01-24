@@ -1,4 +1,4 @@
-import server_manager
+import server_side.src.core.server.server_manager as server_manager
 
 
 def main():

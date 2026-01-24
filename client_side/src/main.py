@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from network import Network
-from core import Core
+from client_side.src.core import Core
 from ui import UI
 
 load_dotenv()
@@ -30,17 +30,22 @@ def main():
     network_manager = Network(os.getenv("SERVER_ADDRESS"), int(os.getenv("SERVER_PORT")))
     ui_manager = UI()
     core = Core(network_manager, ui_manager)
+
     network_manager.connect_to_server()
+
     input_thread = threading.Thread(
         target=user_input_loop,
         args=([core])
     )
+
     server_thread = threading.Thread(
         target=server_receive_loop,
         args=([core])
     )
+
     input_thread.start()
     server_thread.start()
+
     input_thread.join()
     server_thread.join()
 

@@ -10,9 +10,9 @@ import os
 from typing import Callable
 
 # internal modules
-import client_manager
-from session_manager import SessionManager
-from client_states import ClientStates
+import server_side.src.core.client.client_manager as client_manager
+from server_side.src.core.server.session_manager import SessionManager
+from server_side.src.core.client.client_states import ClientStates
 
 load_dotenv()
 

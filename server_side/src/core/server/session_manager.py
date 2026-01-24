@@ -1,5 +1,5 @@
-from client_manager import ClientManager
-from client_states import ClientStates
+from server_side.src.core.client.client_manager import ClientManager
+from server_side.src.core.client.client_states import ClientStates
 
 
 class SessionManager:

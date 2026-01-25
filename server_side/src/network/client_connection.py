@@ -1,6 +1,6 @@
 import socket
 
-class ClientNetwork():
+class ClientConnection:
     def __init__(self, socket: socket.socket):
         self.socket: socket.socket = socket
 

@@ -1,10 +1,30 @@
+from typing import Callable
 from client.client_manager import ClientManager
 from client.client_states import ClientStates
+from session_manager import SessionManager
+
+
+class ParsedCommand():
+    def __init__(self, handler: Callable, command: str, argument: str|None = None):
+        self.command: str
+        self.argument: str|None
+        self.handler: Callable
 
 class CommandHandler():
     def __init__(self):
-        pass
-    
+        self._commands: dict[str, tuple[Callable, bool, str]] = {
+            "ls": (self.handle_ls, False, " - list all users except you"),
+            "disconnect": (self.handle_disconnect, False, " - disconnect from server"),
+            "connect": (
+                self.handle_connect,
+                True,
+                " <target_username> - enter chat with another user if available"
+            ),
+            "username": (self.handle_change_username, True, " <new_username> - change your username"),
+            "menu": (self.handle_display_menu, False, " - display all options again"),
+        }
+
+### VALIDATE & DISPATCH LOGIC ###
     def dispatch(self, cl_manager: ClientManager, raw_input: str): # dispatch by client state
         raw_input = raw_input.strip()
 
@@ -19,139 +39,53 @@ class CommandHandler():
             case _:
                 cl_manager.send_message("Invalid client state.")
     
-    def _handle_menu_state(self):
-        pass
+    def _handle_menu_state(self, client_manager: ClientManager, raw_input: str):
+        parsed_command = self._parse_menu_command()
+        parsed_command.handler()
     
-    def _handle_commands_with_args(self): # commands with args
-        pass
+    def _parse_menu_command(self, client_manager: ClientManager, raw_input: str):
+        parts = raw_input.split()
 
-    def _handle_commands_without_args(self):
-        pass
-
-    def _handle_chat_state(self):
-        pass
-
-    def _dispatch_chosen_option(self, 
-                                client_manager: ClientManager,
-                                chosen_option: str
-    ):
-        chosen_option = chosen_option.strip()
-        print(f"chosen option is chosen {chosen_option}")
-        if (
-            client_manager.get_state() == self._all_states.CHAT
-        ):
-            print("entered chat")
-            self._client_server_connections[
-                client_manager.get_username()
-            ].get_session().start_talking(
-                self, chosen_option
-            )  # refer to already created session by another user who initiated the chat
-
-        elif client_manager.get_state() == self._all_states.MENU:
-            print("entered menu")
-
-            for option, (handler, is_special, *_) in self._all_options.items():
-                if is_special and chosen_option.startswith(f"{option} "):
-
-                    # check if only one arg was provided
-                    parts = chosen_option.split()
-                    option_argument = parts[1]
-                    if len(parts) != 2:
-                        client_manager.send_message(
-                            "Correct usage: <command> <argument>. Please try again, choose one of the following: "
-                        )
-                        client_manager.show_menu(self._all_options)
-                        return
-
-                    # handle 'connect' option
-                    if chosen_option.startswith("connect "):
-                        # check if user exists
-                        if option_argument not in self._client_server_connections.keys():
-                            client_manager.send_message(f"User '{option_argument}' doesn't exist")
-                            return
-
-                        # disallow self connect
-                        if option_argument == client_manager.get_username():
-                            client_manager.send_message("You cannot connect with yourself...")
-                            return
-                        
-                        new_ses_manager = SessionManager(
-                            client_managerSrc=client_manager,
-                            client_managerTarget=self._client_server_connections[option_argument],
-                            smanager=self,
-                        )
-                        handler(new_ses_manager)
-                        return
-
-                    print(f"BUG - parts: {parts}")
-                    handler(client_manager, option_argument)
-                    return
-
-                elif not is_special and chosen_option == option:
-                    print(f"handler for {chosen_option} is reached")
-                    handler(client_manager)
-                    return
-
-            print("skipped the loop")
-            client_manager.send_message("Not a valid option, please try again: \n")
+        if len(parts) > 2:
+            client_manager.send_message("Commands can't have more than 1 argument")
             return
         
-
-    def set_username(
-        self,
-        requester: client.ClientManager,
-        old_username: str,
-        new_username: str,
-    ):
-        # only allow client_manager to access this method
-        if not isinstance(requester, client.ClientManager):
-            print("You are not a client manager, nothing is changed.")
+        command = parts[0]
+        if command not in self.serv_manager.get_commands():
+            client_manager.send_message(f"Command {command} doesn't exist")
             return
         
-        if new_username in self._client_server_connections:
-            requester.send_message("You cannot choose a name of an existing user, please try another one")
-            return
+        handler = self.serv_manager.get_command_handler(command)
+        if len(parts) == 2:
+            argument = parts[1]
+            if not argument:
+                client_manager.send_message("Argument can't be empty")
+                return
+            parsed_command = ParsedCommand(handler, command, argument)
+            
+        elif len(parts) == 1:
+            parsed_command = ParsedCommand(handler, command)
 
-        self._client_server_connections[new_username] = (
-            self._client_server_connections[old_username]
-        )
-        del self._client_server_connections[old_username]
+        return parsed_command
 
-        requester.send_message(
-            f"Your username has been updated, your new username is {new_username}\n"
-        )
 
-        return new_username
+    def _handle_chat_state(self, client_manager: ClientManager, raw_input: str):
+        client_manager.get_session().start_talking(
+            self, raw_input
+        )  # refer to already created session by another user who initiated the chat
 
-    def handle_disconnect_client(self, requester: client.ClientManager, username: str):
-        if not isinstance(requester, client.ClientManager):
-            print("You are not a client manager, nothing is changed.")
-            return
+### HANDLERS ###
 
-        del self._client_server_connections[username]
-        return
-    
-    def handle_menu(self):
-        options = self._smanager.get_all_options()
-
-        # create menu
-        message = "\nHere are all available commmands: \n"
-        for option, (*_, option_description) in options.items():
-            message += f"\t- {option + option_description}\n"
-
-        self.send_message(message)
-        return
-
-    def handle_show_available_clients(self):
-        connections = self._smanager.get_connections()
+    def handle_ls(self):
+        info = self._smanager.get_connected_clients_info()
 
         lines = []
 
-        for username, client_manager in connections.items():
+        for username, state in info:
             if username == self.get_username():
                 continue
             
-            match client_manager.get_state():
+            match state:
                 case ClientStates.CHAT:
                     status =  "(unavailable)"
                 case  ClientStates.MENU:
@@ -170,4 +104,23 @@ class CommandHandler():
         message = "\n".join(lines)
 
         self.send_message(message)
+        return
+
+
+    def handle_disconnect(self):
+        self.smanager.handle_disconnect_client()
+
+    def handle_connect(self):
+        self.smanager.handle_connect()
+
+    def handle_change_username(self):
+        self.smanager.handle_change_username()
+
+    def handle_display_menu(self):
+        # create menu
+        menu = "\nHere are all available commmands: \n"
+        for command, (*_, command_description) in self._commands:
+            message += f"\t- {command + command_description}\n"
+
+        self.send_message(menu)
         return

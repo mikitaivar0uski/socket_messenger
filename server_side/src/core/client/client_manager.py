@@ -1,23 +1,23 @@
 from server_side.src.core.client.client_states import ClientStates
-from server_side.src.network.client_connection import ClientNetwork
+from server_side.src.network.client_connection import ClientConnection
 
 
 class ClientManager:
     def __init__(
         self,
         smanager: "server_manager.ServerManager",
-        connection: ClientNetwork,
+        connection: ClientConnection,
         username: str,
         state: ClientStates,
     ):
         self._username = username
-        self.connection: ClientNetwork = connection
+        self.connection: ClientConnection = connection
         self._state: ClientStates = state
 
         self._smanager = smanager
         self._ses_manager: "ses_manager" = None
 
-# basic IO
+    # basic IO
     def send_message(self, message: str):
         self.connection.send_to_client(message)
         return
@@ -31,18 +31,20 @@ class ClientManager:
         message = self.connection.receive_from_client()
         return message
 
-# session management
+    # session management
     def disconnect_client(self):
         self.connection.close_client_connection()
         self.set_state(ClientStates.DISCONNECTED)
-        return self._smanager.disconnect_client(self, self._username)
+        return
 
-# getter/ setters
+    # getters/setters
     def set_username(self, new_username: str):
         if new_username == self.get_username():
-            self.send_message("What's the point of changing your username if it's the same as before?..")
+            self.send_message(
+                "What's the point of changing your username if it's the same as before?.."
+            )
             return
-        
+
         old_username = self._username
 
         # update name server wide
@@ -50,7 +52,7 @@ class ClientManager:
             self, old_username=old_username, new_username=new_username
         ):
             return
-        
+
         self._username = new_username
         return
 

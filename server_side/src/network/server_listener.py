@@ -1,11 +1,11 @@
 import socket
 
-from server_side.src.network.client_connection import ClientNetwork
+from server_side.src.network.client_connection import ClientConnection
 
-class ServerNetwork():
-    def __init__(self):
-        self.server_ip: str
-        self.server_port: int
+class Listener:
+    def __init__(self, server_ip: str, server_port: int):
+        self.server_ip: str = server_ip
+        self.server_port: int = server_port
         self.listening_socket: socket.socket
         self.running = True
 
@@ -19,7 +19,7 @@ class ServerNetwork():
 
     def accept_connections(self):
         client_socket, client_ip = self.listening_socket.accept()
-        connection = ClientNetwork(client_socket)
+        connection = ClientConnection(client_socket)
         return connection
 
     def stop_listening(self):

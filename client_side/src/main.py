@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from network import Network
-from client_side.src.core import Core
+from core import Core
 from ui import UI
 
 load_dotenv()

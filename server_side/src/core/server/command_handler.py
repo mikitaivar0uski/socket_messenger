@@ -1,8 +1,9 @@
-from typing import Callable
-from client.client_manager import ClientManager
-from client.client_states import ClientStates
-from session_manager import SessionManager
+from typing import Callable, TYPE_CHECKING
+from core.client.client_states import ClientStates
 
+if TYPE_CHECKING:
+    from core.client.client_manager import ClientManager
+    from session_manager import SessionManager
 
 class ParsedCommand():
     def __init__(self, handler: Callable, command: str, argument: str|None = None):
@@ -116,11 +117,11 @@ class CommandHandler():
     def handle_change_username(self):
         self.smanager.handle_change_username()
 
-    def handle_display_menu(self):
+    def handle_display_menu(self, cl_manager: ClientManager):
         # create menu
         menu = "\nHere are all available commmands: \n"
-        for command, (*_, command_description) in self._commands:
-            message += f"\t- {command + command_description}\n"
+        for command, (*_, command_description) in self._commands.items():
+            menu += f"\t- {command + command_description}\n"
 
-        self.send_message(menu)
+        cl_manager.send_message(menu)
         return

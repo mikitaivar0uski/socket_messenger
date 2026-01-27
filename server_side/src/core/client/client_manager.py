@@ -1,21 +1,36 @@
-from server_side.src.core.client.client_states import ClientStates
-from server_side.src.network.client_connection import ClientConnection
-
+from core.client.client_states import ClientStates
+from network.client_connection import ClientConnection
+from core.server.command_handler import CommandHandler
 
 class ClientManager:
     def __init__(
         self,
         smanager: "server_manager.ServerManager",
         connection: ClientConnection,
-        username: str,
-        state: ClientStates,
+        username: str
     ):
         self._username = username
         self.connection: ClientConnection = connection
-        self._state: ClientStates = state
+        self._state: ClientStates
 
         self._smanager = smanager
         self._ses_manager: "ses_manager" = None
+
+        self.command_handler = CommandHandler()
+
+
+    # main loop
+    def run(self):
+        self.state = ClientStates.MENU
+        self.command_handler.handle_display_menu(self)
+        while True:
+            try:
+                command = self.receive_message()
+            except ConnectionError:
+                self.disconnect_client()
+                break
+
+            self.command_handler.dispatch(self, command)
 
     # basic IO
     def send_message(self, message: str):

@@ -4,12 +4,12 @@ class ClientConnection:
     def __init__(self, socket: socket.socket):
         self.socket: socket.socket = socket
 
-    def sent_to_client(self, message: str) -> None:
-        socket.send(message.encode())
+    def send_to_client(self, message: str) -> None:
+        self.socket.send(message.encode())
 
     def receive_from_client(self) -> str:
-        message = socket.recv(1024).decode()
+        message = self.socket.recv(1024).decode().strip()
         return message
 
     def close_client_connection(self):
-        socket.close()
+        self.socket.close()

@@ -10,15 +10,22 @@ import os
 from typing import Callable
 
 # internal modules
-import server_side.src.core.client.client_manager as client_manager
-from server_side.src.core.server.session_manager import SessionManager
-from server_side.src.core.client.client_states import ClientStates
-from client.client_manager import ClientManager
+from core.client.client_states import ClientStates
+
+from core.server.session_manager import SessionManager
+from core.client.client_manager import ClientManager
+from core.server.command_handler import CommandHandler
 
 from network.server_listener import Listener
 from network.client_connection import ClientConnection
 
 load_dotenv()
+
+# listen -> accept | Network
+# -> threading | main
+# -> handler (show menu and process commands) | CommandHandler
+# -> session (optional) | SessionManager
+# -> disconnect | main
 
 
 class ServerManager:
@@ -30,165 +37,57 @@ class ServerManager:
 
         self._server_ip = server_ip
         self._server_port = server_port
-        self._listening_socket: socket.socket = None
-        self._client_server_connections: dict[str, client_manager.ClientManager] = {}
 
-        self._all_options = all_options
+        self._client_server_connections: dict[str, ClientManager] = {}
         self._all_states: ClientStates = ClientStates
-
         self._all_sessions: dict[str, tuple[SessionManager, SessionManager]] = {}
 
     #### INIT CONNECTION ####
-    def connection_setup(self):
+    def run(self):
         listener = Listener(self._server_ip, self._server_port)
         listener.start_listening()
         while listener.running:
             new_connection = listener.accept_connections()
-            new_thread = threading.Thread(target=self._handle_connection, 
-                                          args=(new_connection))
+            new_thread = threading.Thread(target=self.serve, 
+                                          args=(new_connection,))
             new_thread.start()
 
-    #### HANDLE CONNECTION ####
-    def _handle_connection(self, connection: ClientConnection, client_addr: str):
-        print(f"The type of all_states is {type(self._all_states)}")
-        print(f"THREAD started for {client_addr}")
 
-        username = self._get_verified_username(ClientConnection)
-        if username is None:
-            return
+    #### SERVE ####
+    def serve(self, connection: ClientConnection):
+        cl_manager = self.register_client(connection)
+        try:
+            cl_manager.run()
+        except Exception as e:
+            cl_manager.disconnect_client()
 
-        self._register_client(ClientConnection, client_addr, username)
+    #### REGISTER ####
+    def register_client(self, connection: ClientConnection):
+        username = self._get_validated_username(connection)
+        cl_manager = ClientManager(self, connection, username)
+        self._client_server_connections[cl_manager.get_username()] = cl_manager
+        return cl_manager
 
-        self._client_server_connections[username].show_menu(self._all_options)
-
-        self._serve(cmanager=self._client_server_connections[username])
-
-    def _get_verified_username(self, client_socket: socket.socket) -> str:
-        client_socket.send(
-            "Please, enter you username otherwise you can't access this server".encode()
+    def _get_validated_username(self, connection: ClientConnection) -> str:
+        connection.send_to_client(
+            "Please, enter you username otherwise you can't access this server"
         )
-        print("Waiting for username input from...")
-        username = client_socket.recv(512).decode().strip()
-        print(f"Username received is {username} with type: {type(username)}")
+        username = connection.receive_from_client()
 
-        # drop connection if no/ empty username was sent
         if not username:
-            client_socket.send("Sorry, you haven't entered a proper username.".encode())
-            client_socket.close()
-            return None
+            connection.send_to_client("Sorry, you haven't entered a proper username.")
+            connection.close_client_connection()
+            return
 
         elif username in self._client_server_connections:
-            client_socket.send("Sorry, this username is not available".encode())
-            client_socket.close()
-            return None
+            connection.send_to_client("Sorry, this username is not available")
+            connection.close_client_connection()
+            return
 
-        print(f"Username {username} is accepted")
         return username
 
-    def _register_client(self, c_socket: socket.socket, c_addr: str, c_username: str):
-        new_cmanager = client_manager.ClientManager(
-            smanager=self,
-            client_socket=c_socket,
-            addr=c_addr,
-            username=c_username,
-            state=self._all_states.MENU,
-        )
-        self._client_server_connections[c_username] = new_cmanager
-        return
-
-    def _serve(self, cmanager: client_manager.ClientManager):
-        try:
-            while cmanager.get_state() != self._all_states.DISCONNECTED:
-                print(f"Waiting for chosen_option from {cmanager.get_username()}...")
-                chosen_option = cmanager.receive_message()
-                print(
-                    f"Raw chosen option from user {cmanager.get_username()} is {repr(chosen_option)}, the type is {type(chosen_option)}"
-                )
-                self._dispatch_chosen_option(cmanager, chosen_option)
-        except ConnectionResetError as cre:
-            print(
-                f"USER {cmanager.get_username()} forcibly closed connection. {repr(cre)}"
-            )
-            cmanager.disconnect_client()
-            return
-        except Exception as e:
-            print(f"EXCEPTION is reached in handler {repr(e)}")
-            cmanager.disconnect_client()
-            return
-
-    #### DISPATCH CLIENT'S INPUT ####
-
-    def _dispatch_chosen_option(
-        self, cmanager: client_manager.ClientManager, chosen_option: str
-    ):
-        chosen_option = chosen_option.strip()
-        print(f"chosen option is chosen {chosen_option}")
-        if cmanager.get_state() == self._all_states.CHAT:
-            print("entered chat")
-            self._client_server_connections[
-                cmanager.get_username()
-            ].get_session().start_talking(
-                self, chosen_option
-            )  # refer to already created session by another user who initiated the chat
-
-        elif cmanager.get_state() == self._all_states.MENU:
-            print("entered menu")
-
-            for option, (handler, is_special, *_) in self._all_options.items():
-                if is_special and chosen_option.startswith(f"{option} "):
-
-                    # check if only one arg was provided
-                    parts = chosen_option.split()
-                    option_argument = parts[1]
-                    if len(parts) != 2:
-                        cmanager.send_message(
-                            "Correct usage: <command> <argument>. Please try again, choose one of the following: "
-                        )
-                        cmanager.show_menu(self._all_options)
-                        return
-
-                    # handle 'connect' option
-                    if chosen_option.startswith("connect "):
-                        # check if user exists
-                        if (
-                            option_argument
-                            not in self._client_server_connections.keys()
-                        ):
-                            cmanager.send_message(
-                                f"User '{option_argument}' doesn't exist"
-                            )
-                            return
-
-                        # disallow self connect
-                        if option_argument == cmanager.get_username():
-                            cmanager.send_message("You cannot connect with yourself...")
-                            return
-
-                        new_ses_manager = SessionManager(
-                            cmanagerSrc=cmanager,
-                            cmanagerTarget=self._client_server_connections[
-                                option_argument
-                            ],
-                            smanager=self,
-                        )
-                        handler(new_ses_manager)
-                        return
-
-                    print(f"BUG - parts: {parts}")
-                    handler(cmanager, option_argument)
-                    return
-
-                elif not is_special and chosen_option == option:
-                    print(f"handler for {chosen_option} is reached")
-                    handler(cmanager)
-                    return
-
-            print("skipped the loop")
-            cmanager.send_message("Not a valid option, please try again: \n")
-            return
 
     ###### HELPER METHODS ######
-
     def get_connections(self):
         return self._client_server_connections
 
@@ -207,12 +106,12 @@ class ServerManager:
 
     def handle_change_username(
         self,
-        requester: client_manager.ClientManager,
+        requester: ClientManager,
         old_username: str,
         new_username: str,
     ):
         # only allow client_manager to access this method
-        if not isinstance(requester, client_manager.ClientManager):
+        if not isinstance(requester, ClientManager):
             print("You are not a client manager, nothing is changed.")
             return
 
@@ -238,9 +137,6 @@ class ServerManager:
         cl_manager.disconnect_client()
         del self._client_server_connections[username]
         return
-
-    def get_all_options(self):
-        return self._all_options
 
     def get_connected_clients_info(self):
         pass

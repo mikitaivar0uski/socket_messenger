@@ -1,6 +1,6 @@
 import socket
 
-from server_side.src.network.client_connection import ClientConnection
+from network.client_connection import ClientConnection
 
 class Listener:
     def __init__(self, server_ip: str, server_port: int):
@@ -14,8 +14,8 @@ class Listener:
             socket.AF_INET, socket.SOCK_STREAM
         )  # ipv4 + tcp
 
-        self._listening_socket.bind(self.server_ip, self.server_port)
-        self._listening_socket.listen(20)
+        self.listening_socket.bind((self.server_ip, self.server_port))
+        self.listening_socket.listen(20)
 
     def accept_connections(self):
         client_socket, client_ip = self.listening_socket.accept()

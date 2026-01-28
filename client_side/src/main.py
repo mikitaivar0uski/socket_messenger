@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from network import Network
-from client_side.src.core import Core
+from core import Core
 from ui import UI
 
 load_dotenv()
@@ -12,10 +12,8 @@ def user_input_loop(core):
     while core.running:
         try:
             message = core.ui.read()
-            if not core.running:
-                break
             core.on_user_input(message)
-        except (EOFError, KeyboardInterrupt):
+        except Exception:
             core.stop()
 
 def server_receive_loop(core):
@@ -23,11 +21,11 @@ def server_receive_loop(core):
         try:
             message = core.network.receive_from_server()
             core.on_server_message(message)
-        except Exception as e:
+        except Exception:
             core.stop()
 
 def main():
-    network_manager = Network(os.getenv("SERVER_ADDRESS"), int(os.getenv("SERVER_PORT")))
+    network_manager = Network(os.getenv("SERVER_ADDRESS").strip(), int(os.getenv("SERVER_PORT").strip()))
     ui_manager = UI()
     core = Core(network_manager, ui_manager)
 

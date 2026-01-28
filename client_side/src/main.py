@@ -12,10 +12,8 @@ def user_input_loop(core):
     while core.running:
         try:
             message = core.ui.read()
-            if not core.running:
-                break
             core.on_user_input(message)
-        except (EOFError, KeyboardInterrupt):
+        except Exception:
             core.stop()
 
 def server_receive_loop(core):
@@ -23,7 +21,7 @@ def server_receive_loop(core):
         try:
             message = core.network.receive_from_server()
             core.on_server_message(message)
-        except Exception as e:
+        except Exception:
             core.stop()
 
 def main():

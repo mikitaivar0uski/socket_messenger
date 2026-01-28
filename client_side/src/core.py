@@ -12,6 +12,9 @@ class Core():
             self.network.send_to_server(message)
 
     def on_server_message(self, message: str):
+        if not self.running:
+            return
+        
         if not message:
             self.ui.display("Server disconnected.")
             self.stop()
@@ -22,5 +25,5 @@ class Core():
         if self.running == False:
             return
         
-        self.running = False
         self.network.close_server_connection()
+        self.running = False

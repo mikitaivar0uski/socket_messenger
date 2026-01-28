@@ -16,20 +16,23 @@ class ClientManager:
         self._smanager = smanager
         self._ses_manager: "ses_manager" = None
 
-        self.command_handler = CommandHandler()
+        self.command_handler = CommandHandler(self._smanager)
 
 
     # main loop
     def run(self):
-        self.state = ClientStates.MENU
+        self._state = ClientStates.MENU
         self.command_handler.handle_display_menu(self)
         while True:
             try:
                 command = self.receive_message()
-            except ConnectionError:
+                if not command:
+                    self.disconnect_client()
+                    break
+            except Exception as e:
+                print(repr(e))
                 self.disconnect_client()
                 break
-
             self.command_handler.dispatch(self, command)
 
     # basic IO
@@ -54,22 +57,7 @@ class ClientManager:
 
     # getters/setters
     def set_username(self, new_username: str):
-        if new_username == self.get_username():
-            self.send_message(
-                "What's the point of changing your username if it's the same as before?.."
-            )
-            return
-
-        old_username = self._username
-
-        # update name server wide
-        if not self._smanager.set_username(
-            self, old_username=old_username, new_username=new_username
-        ):
-            return
-
         self._username = new_username
-        return
 
     def set_state(self, new_state: ClientStates):
         if not isinstance(new_state, ClientStates):

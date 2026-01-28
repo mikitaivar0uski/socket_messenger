@@ -73,11 +73,11 @@ class SessionManager:
         self.cmanagerSrc.send_message(
             f"The chat with {self.cmanagerTarget.get_username()} is over\n"
         )
-        self.cmanagerSrc.show_menu()
+        
         self.cmanagerTarget.send_message(
             f"The chat with {self.cmanagerSrc.get_username()} is over\n"
         )
-        self.cmanagerTarget.show_menu()
+        
         return message
 
     def _set_exit_condition(self):

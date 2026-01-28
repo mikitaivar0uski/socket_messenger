@@ -21,12 +21,6 @@ from network.client_connection import ClientConnection
 
 load_dotenv()
 
-# listen -> accept | Network
-# -> threading | main
-# -> handler (show menu and process commands) | CommandHandler
-# -> session (optional) | SessionManager
-# -> disconnect | main
-
 
 class ServerManager:
     def __init__(
@@ -56,10 +50,7 @@ class ServerManager:
     #### SERVE ####
     def serve(self, connection: ClientConnection):
         cl_manager = self.register_client(connection)
-        try:
-            cl_manager.run()
-        except Exception as e:
-            cl_manager.disconnect_client()
+        cl_manager.run()
 
     #### REGISTER ####
     def register_client(self, connection: ClientConnection):
@@ -106,37 +97,41 @@ class ServerManager:
 
     def handle_change_username(
         self,
-        requester: ClientManager,
-        old_username: str,
+        cl_manager: ClientManager,
         new_username: str,
     ):
-        # only allow client_manager to access this method
-        if not isinstance(requester, ClientManager):
-            print("You are not a client manager, nothing is changed.")
-            return
-
-        if new_username in self._client_server_connections:
-            requester.send_message(
-                "You cannot choose a name of an existing user, please try another one"
+        old_username = cl_manager.get_username()
+        if new_username == old_username:
+            cl_manager.send_message(
+                "What's the point of changing your username if it's the same as before?.."
             )
             return
+        
+        if new_username in self._client_server_connections:
+            cl_manager.send_message(
+                "You cannot choose a name of an existing user"
+            )
+            return
+        
+        cl_manager.set_username(new_username)
 
-        self._client_server_connections[new_username] = self._client_server_connections[
-            old_username
-        ]
+        self._client_server_connections[new_username] = self._client_server_connections[old_username]
         del self._client_server_connections[old_username]
 
-        requester.send_message(
+        cl_manager.send_message(
             f"Your username has been updated, your new username is {new_username}\n"
         )
 
         return new_username
 
-    def handle_disconnect_client(self, username: str):
-        cl_manager = self._client_server_connections[username]
+    def handle_disconnect_client(self, cl_manager: ClientManager):
         cl_manager.disconnect_client()
-        del self._client_server_connections[username]
+        del self._client_server_connections[cl_manager.get_username()]
         return
 
-    def get_connected_clients_info(self):
-        pass
+    def get_connected_clients_states(self) -> dict[str, ClientStates]:
+        info = {}
+        for username, cl_manager in self._client_server_connections.items():
+            info[username] = cl_manager.get_state()
+        return info
+            

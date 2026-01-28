@@ -1,18 +1,15 @@
 from typing import Callable, TYPE_CHECKING
 from core.client.client_states import ClientStates
 
-if TYPE_CHECKING:
-    from core.client.client_manager import ClientManager
-    from session_manager import SessionManager
-
 class ParsedCommand():
     def __init__(self, handler: Callable, command: str, argument: str|None = None):
         self.command: str
-        self.argument: str|None
-        self.handler: Callable
+        self.argument: str|None = argument
+        self.handler: Callable = handler
 
 class CommandHandler():
-    def __init__(self):
+    def __init__(self, smanager: "ServerManager"):
+        self.smanager = smanager
         self._commands: dict[str, tuple[Callable, bool, str]] = {
             "ls": (self.handle_ls, False, " - list all users except you"),
             "disconnect": (self.handle_disconnect, False, " - disconnect from server"),
@@ -25,8 +22,9 @@ class CommandHandler():
             "menu": (self.handle_display_menu, False, " - display all options again"),
         }
 
+
 ### VALIDATE & DISPATCH LOGIC ###
-    def dispatch(self, cl_manager: ClientManager, raw_input: str): # dispatch by client state
+    def dispatch(self, cl_manager: "ClientManager", raw_input: str): # dispatch by client state
         raw_input = raw_input.strip()
 
         if not raw_input:
@@ -40,11 +38,16 @@ class CommandHandler():
             case _:
                 cl_manager.send_message("Invalid client state.")
     
-    def _handle_menu_state(self, client_manager: ClientManager, raw_input: str):
-        parsed_command = self._parse_menu_command()
-        parsed_command.handler()
+    def _handle_menu_state(self, client_manager: "ClientManager", raw_input: str):
+        parsed_command = self._parse_menu_command(client_manager, raw_input)
+        if parsed_command:
+            if parsed_command.argument:
+                parsed_command.handler(client_manager, parsed_command.argument)
+                return
+            parsed_command.handler(client_manager)
+            return
     
-    def _parse_menu_command(self, client_manager: ClientManager, raw_input: str):
+    def _parse_menu_command(self, client_manager: "ClientManager", raw_input: str):
         parts = raw_input.split()
 
         if len(parts) > 2:
@@ -52,11 +55,11 @@ class CommandHandler():
             return
         
         command = parts[0]
-        if command not in self.serv_manager.get_commands():
+        if command not in self._commands:
             client_manager.send_message(f"Command {command} doesn't exist")
             return
         
-        handler = self.serv_manager.get_command_handler(command)
+        handler = self._get_handler(command)
         if len(parts) == 2:
             argument = parts[1]
             if not argument:
@@ -70,20 +73,28 @@ class CommandHandler():
         return parsed_command
 
 
-    def _handle_chat_state(self, client_manager: ClientManager, raw_input: str):
+    def _handle_chat_state(self, client_manager: "ClientManager", raw_input: str):
         client_manager.get_session().start_talking(
             self, raw_input
         )  # refer to already created session by another user who initiated the chat
 
-### HANDLERS ###
 
-    def handle_ls(self):
-        info = self._smanager.get_connected_clients_info()
+### HANDLERS (SPECIAL)###
+    def handle_connect(self, cl_manager: "ClientManager", target_username: str):
+        self.smanager.handle_connect(cl_manager, target_username)
+
+    def handle_change_username(self, cl_manager: "ClientManager", new_username: str):
+        self.smanager.handle_change_username(cl_manager, new_username)
+
+
+### HANDLERS (NOT SPECIAL)###
+    def handle_ls(self, client_manager: "ClientManager"):
+        info = self.smanager.get_connected_clients_states()
 
         lines = []
 
-        for username, state in info:
-            if username == self.get_username():
+        for username, state in info.items():
+            if username == client_manager.get_username():
                 continue
             
             match state:
@@ -99,25 +110,18 @@ class CommandHandler():
             lines.append(f"\t- {username} {status}")
 
         if not lines:
-            self.send_message("There are no other users connected...")
+            client_manager.send_message("There are no other users connected...")
             return
         
         message = "\n".join(lines)
 
-        self.send_message(message)
+        client_manager.send_message(message)
         return
 
+    def handle_disconnect(self, cl_manager: "ClientManager"):
+        self.smanager.handle_disconnect_client(cl_manager)
 
-    def handle_disconnect(self):
-        self.smanager.handle_disconnect_client()
-
-    def handle_connect(self):
-        self.smanager.handle_connect()
-
-    def handle_change_username(self):
-        self.smanager.handle_change_username()
-
-    def handle_display_menu(self, cl_manager: ClientManager):
+    def handle_display_menu(self, cl_manager: "ClientManager"):
         # create menu
         menu = "\nHere are all available commmands: \n"
         for command, (*_, command_description) in self._commands.items():
@@ -125,3 +129,6 @@ class CommandHandler():
 
         cl_manager.send_message(menu)
         return
+    
+    def _get_handler(self, command: str) -> Callable:
+        return self._commands[command][0]

@@ -25,7 +25,7 @@ def server_receive_loop(core):
             core.stop()
 
 def main():
-    network_manager = Network(os.getenv("SERVER_ADDRESS"), int(os.getenv("SERVER_PORT")))
+    network_manager = Network(os.getenv("SERVER_ADDRESS").strip(), int(os.getenv("SERVER_PORT").strip()))
     ui_manager = UI()
     core = Core(network_manager, ui_manager)
 

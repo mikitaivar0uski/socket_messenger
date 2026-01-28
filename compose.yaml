@@ -3,11 +3,15 @@ services:
     build: ./client_side
     env_file:
       - ./client_side/.env
+    depends_on:
+      - server
 
   client2:
     build: ./client_side
     env_file:
       - ./client_side/.env
+    depends_on:
+      - client1
   
   server:
     build: ./server_side

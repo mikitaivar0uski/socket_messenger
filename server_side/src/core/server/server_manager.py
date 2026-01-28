@@ -25,8 +25,8 @@ load_dotenv()
 class ServerManager:
     def __init__(
         self,
-        server_ip: str = os.getenv("LISTENING_ADDRESS"),
-        server_port: int = int(os.getenv("LISTENING_PORT")),
+        server_ip: str = os.getenv("LISTENING_ADDRESS").strip(),
+        server_port: int = int(os.getenv("LISTENING_PORT").strip()),
     ):
 
         self._server_ip = server_ip

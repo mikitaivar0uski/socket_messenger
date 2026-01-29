@@ -21,6 +21,7 @@ Features:
 
 ### Docker setup
 - [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
+- [WSL 2](https://docs.docker.com/desktop/setup/install/windows-install/#wsl-verification-and-setup)
 
 The project includes `Dockerfile`s for both **server** and **client**, and a `docker-compose.yml` to simplify running multiple clients and the server.
 
@@ -51,8 +52,9 @@ python ./client_side/src/client_main.py
 git clone https://github.com/YehorSolonukha/socket_messenger
 cd socket_messenger
 ```
-2. Run the script for auto-setup:
+2. Run Docker Desktop
+3. (after Docker Desktop is loaded) Run the script for auto-setup:
 ```
 .\windows_docker_setup.ps1
 ```
-3. Enter a username for each client to connect and start messaging
+4. Enter a username for each client to connect and start messaging

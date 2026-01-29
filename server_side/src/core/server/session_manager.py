@@ -1,5 +1,5 @@
-from client_manager import ClientManager
-from client_states import ClientStates
+from core.client.client_manager import ClientManager
+from core.client.client_states import ClientStates
 
 
 class SessionManager:
@@ -73,11 +73,11 @@ class SessionManager:
         self.cmanagerSrc.send_message(
             f"The chat with {self.cmanagerTarget.get_username()} is over\n"
         )
-        self.cmanagerSrc.show_menu()
+        
         self.cmanagerTarget.send_message(
             f"The chat with {self.cmanagerSrc.get_username()} is over\n"
         )
-        self.cmanagerTarget.show_menu()
+        
         return message
 
     def _set_exit_condition(self):
@@ -121,7 +121,7 @@ class SessionManager:
             return True
         elif self.cmanagerTarget.get_state() == ClientStates.CHAT:
             return False
-        self.cmanagerSrc("Unknown error occured, please wait until we resolve it")
+        self.cmanagerSrc.send_message("Unknown error occured, please wait until we resolve it")
         print("New ClientState.STATE isn't handled")
         return
 

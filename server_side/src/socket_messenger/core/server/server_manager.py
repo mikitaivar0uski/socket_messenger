@@ -16,19 +16,19 @@ from dotenv import load_dotenv  # Loads environment variables from .env file
 import os
 
 # internal modules
-from core.client.client_states import ClientStates  # Enum/state definitions for clients
+from socket_messenger.core.client.client_states import ClientStates  # Enum/state definitions for clients
 
-from core.server.session_manager import (
+from socket_messenger.core.server.session_manager import (
     SessionManager,
 )  # Manages client-to-client sessions
-from core.client.client_manager import (
+from socket_messenger.core.client.client_manager import (
     ClientManager,
 )  # Handles logic for a single client
 
-from network.server_listener import Listener  # TCP server socket listener
-from network.client_connection import ClientConnection  # Wrapper over client socket I/O
+from socket_messenger.network.server_listener import Listener  # TCP server socket listener
+from socket_messenger.network.client_connection import ClientConnection  # Wrapper over client socket I/O
 
-from server_side.src.storage.storage_manager import (
+from socket_messenger.storage.storage_manager import (
     StorageManager,
 )  # Interacts with persistent storage
 

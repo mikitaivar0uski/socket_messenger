@@ -1,5 +1,5 @@
-from core.client.client_manager import ClientManager
-from core.client.client_states import ClientStates
+from socket_messenger.core.client.client_manager import ClientManager
+from socket_messenger.core.client.client_states import ClientStates
 
 
 class SessionManager:

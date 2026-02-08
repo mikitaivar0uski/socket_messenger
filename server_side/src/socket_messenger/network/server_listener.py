@@ -1,6 +1,6 @@
 import socket
 
-from network.client_connection import ClientConnection
+from socket_messenger.network.client_connection import ClientConnection
 
 class Listener:
     def __init__(self, server_ip: str, server_port: int):

@@ -9,20 +9,28 @@ It:
 """
 
 # core functionality
-import threading # Used to handle multiple clients concurrently
+import threading  # Used to handle multiple clients concurrently
 
 # config
-from dotenv import load_dotenv # Loads environment variables from .env file
+from dotenv import load_dotenv  # Loads environment variables from .env file
 import os
 
 # internal modules
-from core.client.client_states import ClientStates # Enum/state definitions for clients
+from core.client.client_states import ClientStates  # Enum/state definitions for clients
 
-from core.server.session_manager import SessionManager # Manages client-to-client sessions
-from core.client.client_manager import ClientManager # Handles logic for a single client
+from core.server.session_manager import (
+    SessionManager,
+)  # Manages client-to-client sessions
+from core.client.client_manager import (
+    ClientManager,
+)  # Handles logic for a single client
 
-from network.server_listener import Listener # TCP server socket listener
-from network.client_connection import ClientConnection # Wrapper over client socket I/O
+from network.server_listener import Listener  # TCP server socket listener
+from network.client_connection import ClientConnection  # Wrapper over client socket I/O
+
+from server_side.src.storage.storage_manager import (
+    StorageManager,
+)  # Interacts with persistent storage
 
 
 # Load environment variables into the process
@@ -44,6 +52,9 @@ class ServerManager:
         self._server_ip = server_ip
         self._server_port = server_port
 
+        # Persistent storage configuration
+        self._storage = StorageManager()
+
         # Active clients mapped by username
         self._client_server_connections: dict[str, ClientManager] = {}
 
@@ -52,7 +63,6 @@ class ServerManager:
 
         # Active client-to-client sessions
         self._all_sessions: dict[str, tuple[SessionManager, SessionManager]] = {}
-
 
     #### INIT CONNECTION ####
     def run(self):
@@ -64,54 +74,21 @@ class ServerManager:
         listener.start_listening()
         while listener.running:
             new_connection = listener.accept_connections()
-            new_thread = threading.Thread(target=self.serve, 
-                                          args=(new_connection,))
+            new_thread = threading.Thread(target=self.serve, args=(new_connection,))
             new_thread.start()
-
 
     #### SERVE ####
     def serve(self, connection: ClientConnection):
         """
         Registers a new client and hands control over to its ClientManager.
         """
-        cl_manager = self.register_client(connection)
+        username = self._auth_manager.authenticate_client(connection, self._storage)
+        cl_manager = ClientManager(self, connection, username)
+        self._client_server_self._connections[cl_manager.get_username()] = cl_manager
         cl_manager.run()
 
-
     #### REGISTER ####
-    def register_client(self, connection: ClientConnection):
-        """
-        Validates the username and creates a ClientManager instance.
-        """
-        username = self._get_validated_username(connection)
-        cl_manager = ClientManager(self, connection, username)
-
-        # Store active client by username
-        self._client_server_connections[cl_manager.get_username()] = cl_manager
-        return cl_manager
-
-    def _get_validated_username(self, connection: ClientConnection) -> str:
-        """
-        Requests a username from the client and validates it.
-        Closes the connection if validation fails.
-        """
-        connection.send_to_client(
-            "Please, enter you username otherwise you can't access this server"
-        )
-        username = connection.receive_from_client()
-
-        if not username:
-            connection.send_to_client("Sorry, you haven't entered a proper username.")
-            connection.close_client_connection()
-            return
-
-        elif username in self._client_server_connections:
-            connection.send_to_client("Sorry, this username is not available")
-            connection.close_client_connection()
-            return
-
-        return username
-
+    
 
     ###### HELPER METHODS ######
     def get_connections(self):
@@ -153,18 +130,18 @@ class ServerManager:
                 "What's the point of changing your username if it's the same as before?.."
             )
             return
-        
+
         if new_username in self._client_server_connections:
-            cl_manager.send_message(
-                "You cannot choose a name of an existing user"
-            )
+            cl_manager.send_message("You cannot choose a name of an existing user")
             return
-        
+
         # Update username in ClientManager
         cl_manager.set_username(new_username)
 
         # Update internal mapping
-        self._client_server_connections[new_username] = self._client_server_connections[old_username]
+        self._client_server_connections[new_username] = self._client_server_connections[
+            old_username
+        ]
         del self._client_server_connections[old_username]
 
         cl_manager.send_message(
@@ -189,4 +166,3 @@ class ServerManager:
         for username, cl_manager in self._client_server_connections.items():
             info[username] = cl_manager.get_state()
         return info
-            

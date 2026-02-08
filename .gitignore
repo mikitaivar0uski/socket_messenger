@@ -1,4 +1,15 @@
+# Custom
 test.py
 notes.md
 uml_diagrams
+
+# Python bytecode
 __pycache__
+*.pyc
+*.pyo
+
+# Packagin artifacts
+*.egg-info/
+
+# env files
+.env

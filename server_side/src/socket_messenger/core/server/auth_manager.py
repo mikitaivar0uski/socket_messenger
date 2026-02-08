@@ -1,5 +1,5 @@
-from storage.storage_manager import StorageManager
-from network.client_connection import ClientConnection
+from socket_messenger.storage.storage_manager import StorageManager
+from socket_messenger.network.client_connection import ClientConnection
 
 class AuthManager:
     def __init__(self, connection: ClientConnection, storage: StorageManager):

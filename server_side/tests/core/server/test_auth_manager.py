@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from core.server.auth_manager import AuthManager
+from socket_messenger.core.server.auth_manager import AuthManager
 
 class TestPasswordValidation(unittest.TestCase):
 

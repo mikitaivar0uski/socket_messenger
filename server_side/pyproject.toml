@@ -1,0 +1,11 @@
+# config file to resolve imports by declaring this project as a package
+[project]
+name = "socket_messenger"
+version = "1.0.0"
+dependencies = [
+    "python-dotenv"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

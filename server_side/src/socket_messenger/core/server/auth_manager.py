@@ -2,61 +2,60 @@ from socket_messenger.storage.storage_manager import StorageManager
 from socket_messenger.network.client_connection import ClientConnection
 
 class AuthManager:
-    def __init__(self, connection: ClientConnection, storage: StorageManager):
-        self._connection = connection
+    def __init__(self, storage: StorageManager):
         self._storage = storage
 
-    def authenticate_client(self) -> str:
+    def authenticate_client(self, connection: ClientConnection) -> str:
         while True:
-            self._connection.send_to_client("Would you like to /login or /register ?")
-            command = self._connection.receive_from_client().strip()
+            connection.send_to_client("Would you like to /login or /register ?")
+            command = connection.receive_from_client().strip()
 
             if not command:
-                self._connection.send_to_client(
-                    "Seems like you didn't enter anything, please try again"
+                connection.send_to_client(
+                    "Seems like you didn't enter anything, please try again\n"
                 )
                 continue
             elif len(command.split()) != 1:
-                self._connection.send_to_client(
-                    "Too many arguments, should be either '/login' or '/register', nothing more... Please try again"
+                connection.send_to_client(
+                    "Too many arguments, should be either '/login' or '/register', nothing more... Please try again\n"
                 )
                 continue
             elif command == "/login":
-                username, description = self.login()
+                username, description = self.login(connection)
                 if not username:
-                    self._connection.send_to_client(description)
+                    connection.send_to_client(description)
                     continue
                 break
             elif command == "/register":
-                username, description = self.register()
+                username, description = self.register(connection)
                 if not username:
-                    self._connection.send_to_client(description)
+                    connection.send_to_client(description)
                     continue
                 break
             else:
-                self._connection.send_to_client("Yeah, idk what happened... Please try again")
+                connection.send_to_client("Unknown command... Please try again\n")
 
         return username
 
 
-    def login(self) -> tuple[str, str]:
-        username, description = self._get_validated_username(must_exist=True)
+    def login(self, connection) -> tuple[str, str]:
+        username, description = self._get_validated_username(connection, must_exist=True)
         if not username:
             return "", description
         
-        password, description = self._prompt_for_password()
+        password, description = self._prompt_for_password(connection)
         if not self._storage.verify_password(username, password):
             description = "Password is not correct"
             return "", description
         
         return username, ""
 
-    def register(self) -> tuple[str, str]:
-        username, description = self._get_validated_username(must_exist=False)
+    def register(self, connection:ClientConnection) -> tuple[str, str]:
+        username, description = self._get_validated_username(connection, must_exist=False)
         if not username:
             return "", description
 
-        password, description = self._prompt_for_password()
+        password, description = self._prompt_for_password(connection)
         if not password:
             return "", description
 
@@ -69,13 +68,14 @@ class AuthManager:
         return username, ""
 
     def _get_validated_username(
-        self, must_exist: bool
+        self, connection: ClientConnection, 
+        must_exist: bool, 
     ) -> tuple[str, str]:
         """
         Requests a username from the client and validates it
         """
-        self._connection.send_to_client("Please, enter username")
-        username = self._connection.receive_from_client()
+        connection.send_to_client("Please, enter username")
+        username = connection.receive_from_client()
 
         if not username:
             description = (
@@ -92,11 +92,11 @@ class AuthManager:
 
         return username, ""
 
-    def _prompt_for_password(self) -> tuple[str, str]:
-        self._connection.send_to_client(
+    def _prompt_for_password(self, connection: ClientConnection) -> tuple[str, str]:
+        connection.send_to_client(
             "Please, enter password (at least 2 letters and 2 numbers, at least 5 characters long, max - 15 characters))"
         )
-        password = self._connection.receive_from_client()
+        password = connection.receive_from_client()
         success, descripton = self._validate_password_format(password)
         if not success:
             return "", descripton

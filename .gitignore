@@ -2,13 +2,14 @@
 test.py
 notes.md
 uml_diagrams
+storage.txt
 
 # Python bytecode
 __pycache__
 *.pyc
 *.pyo
 
-# Packagin artifacts
+# Packaging artifacts
 *.egg-info/
 
 # env files

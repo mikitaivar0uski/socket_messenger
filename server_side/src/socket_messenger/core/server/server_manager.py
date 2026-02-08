@@ -32,6 +32,8 @@ from socket_messenger.storage.storage_manager import (
     StorageManager,
 )  # Interacts with persistent storage
 
+from socket_messenger.core.server.auth_manager import AuthManager # authenticates clients
+
 
 # Load environment variables into the process
 load_dotenv()
@@ -54,6 +56,9 @@ class ServerManager:
 
         # Persistent storage configuration
         self._storage = StorageManager()
+
+        # Authentication
+        self._auth_manager = AuthManager(self._storage)
 
         # Active clients mapped by username
         self._client_server_connections: dict[str, ClientManager] = {}
@@ -82,9 +87,9 @@ class ServerManager:
         """
         Registers a new client and hands control over to its ClientManager.
         """
-        username = self._auth_manager.authenticate_client(connection, self._storage)
+        username = self._auth_manager.authenticate_client(connection)
         cl_manager = ClientManager(self, connection, username)
-        self._client_server_self._connections[cl_manager.get_username()] = cl_manager
+        self._client_server_connections[cl_manager.get_username()] = cl_manager
         cl_manager.run()
 
     #### REGISTER ####

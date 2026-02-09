@@ -1,4 +1,4 @@
-from core.server.server_manager import ServerManager
+from socket_messenger.core.server.server_manager import ServerManager
 
 
 def main():

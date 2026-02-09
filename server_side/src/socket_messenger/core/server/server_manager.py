@@ -91,8 +91,6 @@ class ServerManager:
         cl_manager = ClientManager(self, connection, username)
         self._client_server_connections[cl_manager.get_username()] = cl_manager
         cl_manager.run()
-
-    #### REGISTER ####
     
 
     ###### HELPER METHODS ######
@@ -124,7 +122,7 @@ class ServerManager:
     def handle_change_username(
         self,
         cl_manager: ClientManager,
-        new_username: str,
+        new_username: str
     ):
         """
         Changes a client's username if the new one is valid

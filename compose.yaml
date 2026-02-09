@@ -4,6 +4,7 @@ services:
     env_file:
       - ./server_side/.env
 
+
   client:
     build: ./client_side
     env_file:

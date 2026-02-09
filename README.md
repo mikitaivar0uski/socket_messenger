@@ -1,37 +1,65 @@
 # Socket Messenger
 
 ## Description
-A simple **client–server messenger** written in Python.  
+**Socket Messenger** is a simple client–server messaging application written in Python using low-level sockets.
 
-Features:  
-- Multiple clients can connect to a central server.  
-- Clients are identified by user-provided names.  
-- Clients can send messages directly to other clients (no broadcast).  
-- All messages, client info, and connection states exist **only during runtime**.  
-- No login, database, or persistent storage yet.  
-- Built with Python libraries: `socket`, `threading`, `dotenv`, `os`.  
+### Current features
+- Multiple clients can connect to a central server
+- Authentication using usernames and passwords
+- Persistency via a text file
+- Direct client-to-client messaging (no broadcast)  
+- Concurrent connections handled via threading 
+
+### Technologies used
+- Python (`socket`, `threading`, `os`, `dotenv`)
+- Docker & Docker Compose
+- Linux-based containers (Ubuntu / official Python images)
 
 ---
 
 ## Requirements
-### Docker setup
-- [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
-- [WSL 2](https://docs.docker.com/desktop/setup/install/windows-install/#wsl-verification-and-setup)
-
-The project includes `Dockerfile`s for both **server** and **client**, and a `docker-compose.yml` to simplify running multiple clients and the server.
-
----
+- Docker Desktop (required docker engine to enable containerization)
+- WSL2 (required on Windows to provide Linux kernel)
 
 ## Usage
-### Docker auto
-1. Clone the repository:
+### Docker 
+#### Automatic (recommended)
+This method automatically builds images and starts the server and clients.
+1. clone the repository:
 ```
 git clone https://github.com/YehorSolonukha/socket_messenger
 cd socket_messenger
 ```
-2. Run Docker Desktop
-3. (after Docker Desktop is loaded) Run the script for auto-setup:
+2. start Docker Desktop
+3. after Docker Desktop is fully running, execute:
 ```
 .\windows_docker_setup.ps1
 ```
-4. Enter a username for each client to connect and start messaging
+#### Manual
+This method provides full control over container configuration.
+1. verify Docker installation
+- Open a new terminal and run:
+```
+docker run hello-world
+```
+- If Docker is set up correctly, you should see a confirmation message and the container will exit automatically.
+2. clone the repository:
+```
+git clone https://github.com/YehorSolonukha/socket_messenger
+cd socket_messenger
+```
+3. manually remove the last line in compose.yaml - "command: sleep infinity"
+4. build Docker images
+```
+docker compose build
+```
+This builds both the server and client images using their respective Dockerfiles.
+You can verify that the server is running with ```docker compose ps```
+5. open a new terminal for the first client and start a client container
+```
+docker compose run --it client
+```
+6. open a new terminal for the second client and start a client container
+```
+docker compose run --it client
+```

@@ -8,7 +8,7 @@ It:
 """
 
 from typing import Callable, TYPE_CHECKING
-from core.client.client_states import ClientStates
+from socket_messenger.core.client.client_states import ClientStates
 
 
 class ParsedCommand:

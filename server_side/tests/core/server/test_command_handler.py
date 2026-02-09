@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import Mock
 
-from core.server.command_handler import CommandHandler
-from core.client.client_states import ClientStates
+from socket_messenger.core.server.command_handler import CommandHandler
+from socket_messenger.core.client.client_states import ClientStates
 
 class TestCommandHandler(unittest.TestCase):
     def setUp(self):

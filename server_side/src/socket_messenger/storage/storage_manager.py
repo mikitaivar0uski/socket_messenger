@@ -11,6 +11,7 @@ class StorageManager:
         self.STORAGE_FILE.touch(exist_ok=True)
 
 
+# AUTHENTICATION
     def create_client(self, username: str, password: str) -> bool:
         with self.STORAGE_FILE.open("a") as f:
             f.write(f"{username} {password}\n")

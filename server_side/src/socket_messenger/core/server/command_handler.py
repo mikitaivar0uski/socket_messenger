@@ -101,23 +101,34 @@ class CommandHandler:
         if command not in self._commands:
             client_manager.send_message(f"Command {command} doesn't exist")
             return
+        
+
 
         handler = self._get_handler(command)
 
         # Command with argument
-        if len(parts) == 2:
-            argument = parts[1]
-            if not argument:
-                client_manager.send_message("Argument can't be empty")
+        if self._commands[command][1]:  # requires_argument
+            if len(parts) == 1:
+                client_manager.send_message("This command requires an argument")
                 return
+            if len(parts) == 2:
+                argument = parts[1]
+                if not argument:
+                    client_manager.send_message("Argument can't be empty")
+                    return
 
-            parsed_command = ParsedCommand(handler, command, argument)
+                parsed_command = ParsedCommand(handler, command, argument)
+                return parsed_command
 
         # Command without argument
-        elif len(parts) == 1:
-            parsed_command = ParsedCommand(handler, command)
-
-        return parsed_command
+        elif not self._commands[command][1]:  # doesn't require argument
+            if len(parts) == 1:
+                parsed_command = ParsedCommand(handler, command)
+                return parsed_command
+            elif len(parts) == 2:
+                client_manager.send_message("This command doesn't take any arguments")
+                return
+            
 
     def _handle_chat_state(self, client_manager: "ClientManager", raw_input: str):
         """

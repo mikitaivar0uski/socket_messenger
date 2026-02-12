@@ -90,7 +90,12 @@ class AuthManager:
                 )
                 return "", description
 
+        elif must_exist:
+            if not self._storage.client_exists(username):
+                description = ("Sorry, this username doesn't exist in our database")
+                return "", description
         return username, ""
+            
 
     def _prompt_for_password(self, connection: ClientConnection) -> tuple[str, str]:
         connection.send_to_client(
@@ -112,6 +117,10 @@ class AuthManager:
         if len(password.split()) > 1:
             description = "Password should be one continuous string, no white spaces"
             return  False, description
+        
+        if password != password.strip():
+            description = "Please, avoid using whitespaces in front or at the end of your password. Password isn't accepted"
+            return False, description
 
         if len(password) > 15:
             description = "Your password is too long"

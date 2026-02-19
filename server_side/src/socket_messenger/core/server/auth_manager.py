@@ -8,7 +8,7 @@ class AuthManager:
 
     def authenticate_client(self, connection: ClientConnection) -> str:
         while True:
-            connection.send_to_client("Would you like to swaga ?")
+            connection.send_to_client("Would you like to /login or /register ?")
             command = connection.receive_from_client().strip()
 
             if not command:

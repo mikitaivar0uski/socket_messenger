@@ -1,5 +1,6 @@
-from socket_messenger.storage.storage_manager import StorageManager
 from socket_messenger.network.client_connection import ClientConnection
+from socket_messenger.storage.storage_manager import StorageManager
+
 
 class AuthManager:
     def __init__(self, storage: StorageManager):
@@ -7,7 +8,7 @@ class AuthManager:
 
     def authenticate_client(self, connection: ClientConnection) -> str:
         while True:
-            connection.send_to_client("Would you like to /login or /register ?")
+            connection.send_to_client("Would you like to swaga ?")
             command = connection.receive_from_client().strip()
 
             if not command:
@@ -37,21 +38,24 @@ class AuthManager:
 
         return username
 
-
     def login(self, connection) -> tuple[str, str]:
-        username, description = self._get_validated_username(connection, must_exist=True)
+        username, description = self._get_validated_username(
+            connection, must_exist=True
+        )
         if not username:
             return "", description
-        
+
         password, description = self._prompt_for_password(connection)
         if not self._storage.verify_password(username, password):
             description = "Password is not correct"
             return "", description
-        
+
         return username, ""
 
-    def register(self, connection:ClientConnection) -> tuple[str, str]:
-        username, description = self._get_validated_username(connection, must_exist=False)
+    def register(self, connection: ClientConnection) -> tuple[str, str]:
+        username, description = self._get_validated_username(
+            connection, must_exist=False
+        )
         if not username:
             return "", description
 
@@ -68,8 +72,9 @@ class AuthManager:
         return username, ""
 
     def _get_validated_username(
-        self, connection: ClientConnection, 
-        must_exist: bool, 
+        self,
+        connection: ClientConnection,
+        must_exist: bool,
     ) -> tuple[str, str]:
         """
         Requests a username from the client and validates it
@@ -78,24 +83,19 @@ class AuthManager:
         username = connection.receive_from_client()
 
         if not username:
-            description = (
-                "Sorry, you haven't entered a proper username"
-            )
+            description = "Sorry, you haven't entered a proper username"
             return "", description
 
         if not must_exist:
             if self._storage.client_exists(username):
-                description = (
-                    "Sorry, this username is not available"
-                )
+                description = "Sorry, this username is not available"
                 return "", description
 
         elif must_exist:
             if not self._storage.client_exists(username):
-                description = ("Sorry, this username doesn't exist in our database")
+                description = "Sorry, this username doesn't exist in our database"
                 return "", description
         return username, ""
-            
 
     def _prompt_for_password(self, connection: ClientConnection) -> tuple[str, str]:
         connection.send_to_client(
@@ -116,29 +116,29 @@ class AuthManager:
 
         if len(password.split()) > 1:
             description = "Password should be one continuous string, no white spaces"
-            return  False, description
-        
+            return False, description
+
         if password != password.strip():
             description = "Please, avoid using whitespaces in front or at the end of your password. Password isn't accepted"
             return False, description
 
         if len(password) > 15:
             description = "Your password is too long"
-            return  False, description
+            return False, description
 
         if len(password) < 5:
             description = "Your password is too short"
-            return  False, description
+            return False, description
 
         digits = sum(i.isdigit() for i in password)
         letters = sum(i.isalpha() for i in password)
 
         if digits < 2:
             description = "Password must contain at least 2 numbers"
-            return  False, description
+            return False, description
 
         if letters < 2:
             description = "Password must contain at least 2 letters"
-            return  False, description
+            return False, description
 
         return True, ""
